@@ -1,5 +1,5 @@
 (*
-    Copyright (c) 2020 David C.J. Matthews
+    Copyright (c) 2020-21 David C.J. Matthews
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ struct
 
     exception Error
 
-    fun buildPage{source, template, outputFile, previous, next, parent} =
+    fun buildPage{source, styleSheet, outputFile, previous, next, parent} =
     let
         open TextIO Parsetree
         val streamIn =
@@ -51,34 +51,6 @@ struct
                     raise Error
                 )
 
-        fun makeNav(SOME(link, name)) =
-                concat["<li><a href=\"", link, "\">", name, "</a></li>\n"]
-        |   makeNav(NONE) = "<li></li>\n"
-
-        val navigation =
-            concat["<ul class=\"nav\">\n", makeNav previous,
-                   makeNav parent, makeNav next, "</ul>"]
-
-        (* Copy the input template to the output, replacing <!--INSERTION-->
-           by the supplied information. *)
-        val defaultTemplate =
-            concat[
-                "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n",
-                "<HTML>\n<HEAD>\n<TITLE>\n<!--TITLE-->\n</TITLE>\n",
-                "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">\n",
-                "<link href=\"http://www.polyml.org/documentation/Reference/docstyle.css\" rel=\"stylesheet\" type=\"text/css\">\n",
-                "</HEAD>\n<BODY BGCOLOR=\"#ffffff\">\n<!--NAVIGATION-->\n",
-                "<H2><STRONG>\n<!--TITLE-->\n</STRONG></H2>\n<!--BODY-->\n",
-                "<!--NAVIGATION-->\n</BODY>\n</HTML>"]
-
-        val instream =
-            case template of NONE => TextIO.openString defaultTemplate
-            |   SOME template => TextIO.openIn template
-                handle IO.Io _ =>
-                (
-                    output(stdErr, "Unable to open template file: " ^ template ^ "\n");
-                    raise Error
-                )
         val outstream =
             TextIO.openOut outputFile
                 handle IO.Io _ =>
@@ -88,7 +60,11 @@ struct
                 )
 
         fun out s = output(outstream, s)
-        
+
+        fun makeNav(kind, SOME(link, name)) =
+                out(concat["<", kind, " href=\"", link, "\">", name, "</", kind, ">\n"])
+        |   makeNav(_, NONE) = ()
+
         local
             fun createName str (s, _) = str ^ " " ^ s
             val sigNames =
@@ -101,48 +77,55 @@ struct
             val title = String.concatWith " " (sigNames @ structNames)
         end
  
-        fun copyToOutput() =
-            case inputLine instream of
-                NONE => () (* Finished *)
-            |   SOME s =>
-                (
-                    if s = "<!--BODY-->\n"
-                    then
-                    (
-                        Markdown.outputMarkdown(outstream, preText);
-                        outputProgram(decs, outstream);
-                        Markdown.outputMarkdown(outstream, postText)
-                    )
-                    else if s = "<!--NAVIGATION-->\n"
-                    then out navigation
-                    else if s = "<!--TITLE-->\n"
-                    then out title
-                    else out s;
-                    copyToOutput()
-                )
     in
-        copyToOutput();
-        closeOut outstream;
-        closeIn instream
+        out "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        
+        case styleSheet of
+            SOME style =>
+                out(concat["<?xml-stylesheet type=\"text/xsl\" href=\"", style, "\"?>\n"])
+        |   NONE => ();
+        out "<polydoc>\n";
+        out "<title>"; out title; out "</title>\n";
+        
+        out "<navigation>\n";
+        makeNav("parent", parent); 
+        makeNav("previous", previous); 
+        makeNav("next", next); 
+        out "</navigation>\n";
+
+        out "<headtext>\n";
+        Markdown.outputMarkdown(outstream, preText);
+        out "</headtext>\n";
+        
+        out "<topdecs>\n";
+            outputProgram(decs, outstream);
+        out "</topdecs>\n";
+        
+        out "<tailtext>\n";
+        Markdown.outputMarkdown(outstream, postText);
+        out "</tailtext>\n";
+
+        out "</polydoc>\n";
+        closeOut outstream
     end
         handle Error => () (* Error reported elsewhere. *)
             |   exn =>
                     TextIO.output(TextIO.stdErr, "Unexpected exception " ^ exnMessage exn ^ "\n")
     local
         open OS.Path OS.FileSys
-        fun addHtml s = joinBaseExt{base=s, ext=SOME "html"}
+        fun addXml s = joinBaseExt{base=s, ext=SOME "xml"}
         
         (* Convert the source name into an output file name.
-           We keep the original extension but add .html *)
+           We keep the original extension but add .xml *)
         fun sourceNameToHTML(outputDir, sourceFile) =
-            joinDirFile{dir=outputDir, file=addHtml(file sourceFile)}
+            joinDirFile{dir=outputDir, file=addXml(file sourceFile)}
     in
         fun processFiles{sourceFiles=[], ...} =
             raise Fail "No source files provided"
     
-        |   processFiles{sourceFiles=[single], template, outputFileOrDir, parent} =
+        |   processFiles{sourceFiles=[single], styleSheet, outputFileOrDir, parent} =
             if isDir single
-            then processDirectory{directory=single, template=template,
+            then processDirectory{directory=single, styleSheet=styleSheet,
                                   outputFileOrDir=outputFileOrDir, parent=parent}
             else
             let
@@ -152,11 +135,11 @@ struct
                     then sourceNameToHTML(outputFileOrDir, single)
                     else outputFileOrDir
             in
-                buildPage{source=single, template=template, outputFile=outputFile,
+                buildPage{source=single, styleSheet=styleSheet, outputFile=outputFile,
                           next=NONE, previous=NONE, parent=parent}
             end
 
-        |   processFiles{sourceFiles, template, outputFileOrDir, parent} =
+        |   processFiles{sourceFiles, styleSheet, outputFileOrDir, parent} =
             let
                 val listWithBaseNames =
                     map (fn path => (path, base(#file(splitDirFile path)))) sourceFiles
@@ -179,23 +162,23 @@ struct
                 fun processSources(_, []) = ()
             
                 |   processSources(previous, [(path, _)]) =
-                        buildPage{source=path, template=template,
+                        buildPage{source=path, styleSheet=styleSheet,
                             outputFile=sourceNameToHTML(outputFileOrDir, path),
                             previous=previous, next=NONE, parent=parent}
                 
                 |   processSources(previous, (path, name) :: (rest as (nextPath, next) :: _)) =
                     (
-                        buildPage{source=path, template=template,
+                        buildPage{source=path, styleSheet=styleSheet,
                             outputFile=sourceNameToHTML(outputFileOrDir, path),
-                            previous=previous, next=SOME(addHtml(file nextPath), next), parent=parent};
-                        processSources(SOME(addHtml(file path), name), rest)
+                            previous=previous, next=SOME(addXml(file nextPath), next), parent=parent};
+                        processSources(SOME(addXml(file path), name), rest)
                     )
             in
                 processSources(NONE, sorted)
             end
     
         (* Process all the ML files in a directory *)
-        and processDirectory{directory, template, outputFileOrDir, parent} =
+        and processDirectory{directory, styleSheet, outputFileOrDir, parent} =
         let
             open OS.FileSys OS.Path
             val dir = openDir directory
@@ -216,7 +199,7 @@ struct
             val allFiles = readAll []
             val () = closeDir dir
         in
-            processFiles{sourceFiles=allFiles, template=template,
+            processFiles{sourceFiles=allFiles, styleSheet=styleSheet,
                  outputFileOrDir=outputFileOrDir, parent=parent}
         end
     end

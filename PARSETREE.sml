@@ -1,5 +1,5 @@
 (*
-    Copyright (c) 2020 David C.J. Matthews
+    Copyright (c) 2020-21 David C.J. Matthews
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -353,13 +353,11 @@ struct
                 val pretty = PrettyBlock(0, true, [], prettyAnds(nameAndSig, "structure") items)
                 open TextIO
             in
-                output(str, "<div class=\"entryblock\">\n<pre class=\"entrycode\">");
+                output(str, "<binding>\n<code>");
                 PolyML.prettyPrint(fn s => output(str, s), 70) pretty;
-                output(str, "</pre>");
-                output(str, "<div class=\"entrytext\">");
+                output(str, "</code>\n<text>");
                 outputMarkdown(str, text);
-                output(str, "</div>");
-                output(str, "</div>\n");
+                output(str, "</text>\n</binding>\n");
                 List.app (fn (_, sign) => detailSig str sign) items
             end
 
@@ -380,13 +378,11 @@ struct
                 val pretty =
                     PrettyBlock(0, true, [], prettyAnds(nameAndType, "val") items)
             in
-                output(str, "<div class=\"entryblock\">\n<pre class=\"entrycode\">");
+                output(str, "<binding>\n<code>");
                 PolyML.prettyPrint(fn s => output(str, s), 70) pretty;
-                output(str, "</pre>");
-                output(str, "<div class=\"entrytext\">");
+                output(str, "</code>\n<text>");
                 outputMarkdown(str, text);
-                output(str, "</div>");
-                output(str, "</div>\n") 
+                output(str, "</text>\n</binding>\n")
             end
 
         |   detailSpec str (spec as ExSpec(_, text)) =
@@ -394,13 +390,11 @@ struct
                 open TextIO
                 val pretty = prettySpec true spec
             in
-                output(str, "<div class=\"entryblock\">\n<pre class=\"entrycode\">");
+                output(str, "<binding>\n<code>");
                 PolyML.prettyPrint(fn s => output(str, s), 70) pretty;
-                output(str, "</pre>");
-                output(str, "<div class=\"entrytext\">");
+                output(str, "</code>\n<text>");
                 outputMarkdown(str, text);
-                output(str, "</div>");
-                output(str, "</div>\n") 
+                output(str, "</text>\n</binding>\n") 
             end
 
         |   detailSpec str (spec as DatatypeSpec(_, text)) =
@@ -408,13 +402,11 @@ struct
                 val pretty = prettySpec true spec
                 open TextIO
             in
-                output(str, "<div class=\"entryblock\">\n<pre class=\"entrycode\">");
+                output(str, "<binding>\n<code>");
                 PolyML.prettyPrint(fn s => output(str, s), 70) pretty;
-                output(str, "</pre>");
-                output(str, "<div class=\"entrytext\">");
+                output(str, "</code>\n<text>");
                 outputMarkdown(str, text);
-                output(str, "</div>");
-                output(str, "</div>\n") 
+                output(str, "</text>\n</binding>\n")
             end
 
         |   detailSpec str (spec as DatatypeReplication _) =
@@ -422,14 +414,14 @@ struct
                 val pretty = prettySpec true spec
                 open TextIO
             in
-                output(str, "<div class=\"entryblock\">\n<pre class=\"entrycode\">");
+                output(str, "<binding>\n<code>");
                 PolyML.prettyPrint(fn s => output(str, s), 70) pretty;
-                output(str, "</pre>");
+                output(str, "</code>");
                 (* TODO: This doesn't have any associated text. *)
-                (*output(str, "<div class=\"entrytext\">");
+                (*output(str, "<text>");
                 outputMarkdown(str, text);
-                output(str, "</div>"); *)
-                output(str, "</div>\n") 
+                output(str, "</text>"); *)
+                output(str, "</binding>\n") 
             end
 
         |   detailSpec str (spec as TypeSpec{ text, ... }) =
@@ -437,13 +429,11 @@ struct
                 open TextIO
                 val pretty = prettySpec true spec
             in
-                output(str, "<div class=\"entryblock\">\n<pre class=\"entrycode\">");
+                output(str, "<binding>\n<code>");
                 PolyML.prettyPrint(fn s => output(str, s), 70) pretty;
-                output(str, "</pre>");
-                output(str, "<div class=\"entrytext\">");
+                output(str, "</code>\n<text>");
                 outputMarkdown(str, text);
-                output(str, "</div>");
-                output(str, "</div>\n") 
+                output(str, "</text>\n</binding>\n") 
             end
         
             (* These aren't needed in the detail *)
@@ -466,10 +456,13 @@ struct
             open TextIO
             val pretty = prettyProgram program
         in
-            output(stream, "<pre class=\"mainsig\">");
+            output(stream, "<summary>");
             PolyML.prettyPrint(fn s => output(stream, s), 70) pretty;
-            output(stream, "</pre>\n");
-            List.app (detailProgram stream) program
+            output(stream, "</summary>\n");
+ 
+            output(stream, "<bindings>");
+            List.app (detailProgram stream) program;
+            output(stream, "</bindings>\n")
         end
     end
 
