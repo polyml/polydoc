@@ -629,6 +629,65 @@ struct
     in
         Structure(getList (AndSy, lex, doStructDec))
     end
+    
+    and functorDec lex =
+    let
+        val () = insymbol lex
+        
+        fun doFunctDec () =
+        let (* Read fncId (<<paramSpec>> ) <<: sig>> = str *)
+            (* First the identifier *)
+            val strId = id lex before insymbol lex
+            val () = getsym (LeftParen, lex)
+            (* Now the parameters *)
+
+            val parameter = (* empty | name:sigexp | spec *)
+                if sy lex = RightParen
+                    (* empty *)
+                then NoFunctorArg
+            
+                else if sy lex = DatatypeSy orelse sy lex = TypeSy orelse sy lex = EqtypeSy orelse
+                        sy lex = ValSy orelse sy lex = ExceptionSy orelse
+                        sy lex = StructureSy orelse sy lex = IncludeSy
+                (* spec *)
+                then AnonFunctorArg(signatureSpec lex)
+         
+                (* name : sigexp *)
+                else
+                let
+                    val strId = id lex before insymbol lex
+                    val () = getsym (Colon, lex)
+ 
+                    (* Next the signature. *)
+                    val sgn = parseSignature lex
+                in
+                    NamedFunctorArg(strId, sgn)
+                end (* parameter *)
+
+            val () = getsym (RightParen, lex)
+       
+            (* Next the signature if there is one. *)       
+            val sigOpt =
+                if sy lex = Colon orelse sy lex = ColonGt
+                then (insymbol lex; SOME(parseSignature lex))
+                else NONE
+           
+            (* Now the equals sign *)
+            val () = getsym (EqualsSign, lex)
+        in
+            (* Skip the structure body *)
+            if sy lex = StructSy
+            then (insymbol lex; skipToEnd 1 lex)
+        
+            else if sy lex = Ident orelse sy lex = Asterisk
+            then insymbol lex
+            else raise Fail "Expected struct or structure name";
+            
+            (strId, sigOpt, parameter)
+        end (* doFunctDec *)
+    in
+        Functor(getList (AndSy, lex, doFunctDec))
+    end
 
     fun parseTopDecs lex =
     let
@@ -643,7 +702,10 @@ struct
     
             else if sy lex = StructureSy
             then structureDec lex :: parseTop lex
-    
+       
+            else if sy lex = FunctorSy
+            then functorDec lex :: parseTop lex
+ 
             else if sy lex = Semicolon
             then (insymbol lex; parseTop lex)
             

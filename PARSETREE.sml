@@ -47,10 +47,16 @@ struct
     |   SigWhere of sigNature * typeParseTree * typeParseTree
     
     and typeKind = TypeKindType | TypeKindEqType | TypeKindWithType
+
+    and functorArg =
+        NoFunctorArg
+    |   AnonFunctorArg of specParseTree list
+    |   NamedFunctorArg of string * sigNature
     
     datatype program =
         Signature of (string * sigNature) list
     |   Structure of (string * sigNature option) list
+    |   Functor of (string * sigNature option * functorArg) list
 
     open PolyML
     
@@ -331,11 +337,30 @@ struct
         fun nameAndOptSig((name, SOME signat), pref) =
                 PrettyBlock(0, true, [], [PrettyString(pref ^ " " ^ name ^ ":"), PrettyBreak(1, 0), prettySig signat])
         |   nameAndOptSig((name, NONE), pref) = PrettyString(pref ^ " " ^ name)
+
+        fun functorArg NoFunctorArg = PrettyString "()"
+        |   functorArg (AnonFunctorArg specs) =
+                PrettyBlock(0, true, [],
+                PrettyString "(" ::
+                    PrettyBreak(1, 4) :: prettyItems (prettySpec false, 4) specs @
+                        [PrettyBreak(1, 0), PrettyString ")"])
+        |   functorArg(NamedFunctorArg(name, signat)) =
+                PrettyBlock(0, true, [],
+                    [PrettyString("(" ^ name ^ ":"), PrettyBreak(1, 0), prettySig signat, PrettyBreak(0, 0), PrettyString ")"])
+
+        fun functorEntry((name, NONE, arg), pref) =
+                PrettyBlock(0, false, [], [PrettyString(pref ^ " " ^ name), PrettyBreak(0, 0), functorArg arg])
+        |   functorEntry((name, SOME signat, arg), pref) =
+                PrettyBlock(0, false, [],
+                    [PrettyString(pref ^ " " ^ name), PrettyBreak(0, 0), functorArg arg,
+                     PrettyBreak(0, 0), PrettyString ":", PrettyBreak(1, 0), prettySig signat])
     in
         fun prettyTopDec(Signature items) =
             PrettyBlock(0, true, [], prettyAnds(nameAndSig, "signature") items)
         |   prettyTopDec(Structure items) =
             PrettyBlock(0, true, [], prettyAnds(nameAndOptSig, "structure") items)
+        |   prettyTopDec(Functor items) =
+            PrettyBlock(0, true, [], prettyAnds(functorEntry, "functor") items)
     end
     
     fun prettyProgram items = PrettyBlock(0, true, [], prettyItems(prettyTopDec, 0) items)
@@ -454,6 +479,9 @@ struct
 
         |   detailProgram str (Structure items) =
             List.app (fn (_, SOME sign) => detailSig str sign | _ => ()) items
+
+        |   detailProgram str (Functor items) =
+            List.app (fn (_, SOME sign, _) => detailSig str sign | _ => ()) items
     in
         fun outputProgram (program, stream) =
         let

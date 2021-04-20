@@ -43,9 +43,15 @@ sig
     
     and typeKind = TypeKindType | TypeKindEqType | TypeKindWithType
     
+    and functorArg =
+        NoFunctorArg
+    |   AnonFunctorArg of specParseTree list
+    |   NamedFunctorArg of string * sigNature
+    
     datatype program =
         Signature of (string * sigNature) list
     |   Structure of (string * sigNature option) list
+    |   Functor of (string * sigNature option * functorArg) list
 
     val outputProgram: program list * TextIO.outstream -> unit
     

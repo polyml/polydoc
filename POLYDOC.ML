@@ -67,14 +67,18 @@ struct
 
         local
             fun createName str (s, _) = str ^ " " ^ s
+            fun createFnName str (s, _, _) = str ^ " " ^ s
             val sigNames =
                 List.foldl(fn (Signature s, l) =>
                     map (createName "Signature") s @ l | (_, l) => l) [] decs
             val structNames =
                 List.foldl(fn (Structure s, l) =>
                     map (createName "Structure") s @ l | (_, l) => l) [] decs
+            val functorNames =
+                List.foldl(fn (Functor s, l) =>
+                    map (createFnName "Functor") s @ l | (_, l) => l) [] decs
         in
-            val title = String.concatWith " " (sigNames @ structNames)
+            val title = String.concatWith " " (sigNames @ structNames @ functorNames)
         end
  
     in
