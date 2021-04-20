@@ -2,6 +2,7 @@
 <polyproject>
 	<source name="LEX.sig" />
 	<source name="LEX.sml" />
+	<source name="main.ML" />
 	<source name="MARKDOWN.sig" />
 	<source name="Markdown.sml" />
 	<source name="ml_bind.ML" />

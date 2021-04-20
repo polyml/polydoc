@@ -14,3 +14,5 @@ use "PARSER.ML";
 use "PARSETREE.sml";
 use "POLYDOC.ML";
 use "ml_bind.ML";
+use "main.ML";
+
