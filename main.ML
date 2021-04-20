@@ -35,17 +35,17 @@ let
             else error "-o argument may only appear once\n"
 
     |   processArgs({sourceFiles, styleSheet, outputFileOrDir, parent, ...},
-            "-f" :: style :: args) =
+            "-s" :: style :: args) =
         (
             case styleSheet of
                 NONE =>
                     processArgs({sourceFiles=sourceFiles, styleSheet=SOME style, outputFileOrDir=outputFileOrDir, parent=parent}, args)
-            |   SOME _ => error "-f argument may only appear once\n"
+            |   SOME _ => error "-s argument may only appear once\n"
         )
 
     |   processArgs({sourceFiles, styleSheet, outputFileOrDir, parent}, inFile :: args) =
             if String.isPrefix "-" inFile
-            then error ("Unknown option " ^ inFile)
+            then error ("Unknown option " ^ inFile ^ "\n")
             else processArgs({sourceFiles=sourceFiles @ [inFile], styleSheet=styleSheet, outputFileOrDir=outputFileOrDir, parent=parent}, args)
    
     val arguments =
