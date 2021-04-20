@@ -297,8 +297,19 @@ struct
                                 getList (AndSy, lex, fn () => datatypeBinding lex)
                             )
                     |   _ => []
+
+                val dtSpec = [DatatypeSpec(db :: dbs, text)]
+                (* Withtype is probably not allowed in a signature *)
+                val withTypes =
+                    if sy lex = WithtypeSy
+                    then
+                    (
+                        insymbol lex;
+                        [TypeSpec{items=getList (AndSy, lex, fn () => typeBinding lex), typeKind=TypeKindWithType, text=text}]
+                    )
+                    else []
             in
-                [DatatypeSpec(db :: dbs, text)]
+                dtSpec @ withTypes
             end
     end
     
@@ -437,7 +448,7 @@ struct
                 val () = insymbol lex
                 val text = getText lex
             in
-                [TypeSpec{items=getList (AndSy, lex, fn () => typeBinding lex), isEq=false, text=text}]
+                [TypeSpec{items=getList (AndSy, lex, fn () => typeBinding lex), typeKind=TypeKindType, text=text}]
             end
 
          |  EqtypeSy =>
@@ -445,7 +456,7 @@ struct
                 val () = insymbol lex
                 val text = getText lex
             in
-                [TypeSpec{items=getList (AndSy, lex, fn () => typeBinding lex), isEq=true, text=text}]
+                [TypeSpec{items=getList (AndSy, lex, fn () => typeBinding lex), typeKind=TypeKindEqType, text=text}]
             end
 
          |  ValSy =>
@@ -662,6 +673,7 @@ struct
                     |   AbortParse => ()
                     |   EndSy => () (* Inside Local *)
                     |   InSy => () (* Inside Local *)
+                    |   StructureSy => () (* Start of new structure inside Local *)
                     |   StructSy => (insymbol lex; skipToEnd 1 lex; skipTop lex)
                     |   LetSy => (insymbol lex; skipToEnd 1 lex; skipTop lex)
                     |   LocalSy => (insymbol lex; skipToEnd 1 lex; skipTop lex)

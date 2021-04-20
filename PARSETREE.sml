@@ -3,15 +3,15 @@
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
-    License version 2.1 as published by the Free Software Foundation.
+    Licence version 2.1 as published by the Free Software Foundation.
     
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
+    Lesser General Public Licence for more details.
     
     You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
+    Licence along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 *)
 (*
@@ -37,7 +37,7 @@ struct
     |   ExSpec of (string * typeParseTree option) list * string
     |   DatatypeSpec of (string * string list * (string * typeParseTree option) list) list * string
     |   DatatypeReplication of {newType:string, oldType: string}
-    |   TypeSpec of { items: (string * string list * typeParseTree option) list, isEq: bool, text: string }
+    |   TypeSpec of { items: (string * string list * typeParseTree option) list, typeKind: typeKind, text: string }
     |   IncludeSig of sigNature list
     |   Sharing of { isType: bool, shares: string list }
     
@@ -45,6 +45,8 @@ struct
         NamedSig of string
     |   SigEnd of specParseTree list
     |   SigWhere of sigNature * typeParseTree * typeParseTree
+    
+    and typeKind = TypeKindType | TypeKindEqType | TypeKindWithType
     
     datatype program =
         Signature of (string * sigNature) list
@@ -270,7 +272,7 @@ struct
                 ]
             )
     
-    |   prettySpec decorate (TypeSpec{ items, isEq, ... }) =
+    |   prettySpec decorate (TypeSpec{ items, typeKind, ... }) =
         let
             fun nameAndType ((name, args, NONE), pref) =
                 PrettyBlock(0, true, [],
@@ -283,8 +285,10 @@ struct
                         [PrettyString pref, PrettyBreak(1, 0)] @ prettyTypeVars args @
                         [nameAndLink decorate name, PrettyBreak(1, 0), PrettyString "="]),
                      PrettyBreak(1, 4), prettyType typ])
+            val kind =
+                case typeKind of TypeKindType => "type" | TypeKindEqType => "eqtype" | TypeKindWithType => "withtype"
         in
-            PrettyBlock(0, true, [], prettyAnds(nameAndType, if isEq then "eqtype" else "type") items)
+            PrettyBlock(0, true, [], prettyAnds(nameAndType, kind) items)
         end
 
     |   prettySpec _ (Sharing { isType, shares, ... }) =
