@@ -43,7 +43,7 @@ struct
         fun getCh() =
         let
             val ch = TextIO.input1 streamIn
-            val () = case ch of SOME # "\n" => line := !line + 1 | _ => ()
+            val () = case ch of SOME #"\n" => line := !line + 1 | _ => ()
         in
             ch
         end
