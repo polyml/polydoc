@@ -190,7 +190,7 @@ struct
     |   nameAndLink true name =
         let
             val nameWithLinks =
-                concat["<a name=\"", htmlEscape name, "\" id=\"", htmlEscape name, "\"></a>", name]
+                concat["<definition>", htmlEscape name, "</definition>"]
         in
             PrettyStringWithWidth(nameWithLinks, String.size name)
         end
@@ -372,8 +372,7 @@ struct
                 fun nameAndSig((name, _), pref) =
                 let
                     val escName = htmlEscape name
-                    val nameWithLinks =
-                        concat[pref, " <a name=\"", escName, "\" id=\"", escName, "\"></a>", escName]
+                    val nameWithLinks = concat[pref, " <definition>", escName, "</definition>"]
                     val realSize = String.size(concat[pref, " ", name])
                 in
                     PrettyStringWithWidth(nameWithLinks, realSize)
@@ -394,10 +393,8 @@ struct
             let
                 fun nameAndType ((name, typ), pref) =
                 let
-                    val escName = htmlEscape name
-                    val nameWithLinks =
-                        concat[pref, " <a name=\"", escName, "\" id=\"", escName, "\"></a>", escName, ":"]
-                    (* Apparently HTML5 ids can be any character so we don't need to escape. *)
+                    (* The prefix ("val" or "and") and the colon are outside the identifier. *)
+                    val nameWithLinks = concat[pref, " <definition>", htmlEscape name, "</definition> :"]
                     val realSize = String.size(concat[pref, " ", name, ":"])
                 in
                     PrettyBlock(0, true, [],

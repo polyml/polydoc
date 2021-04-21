@@ -1,17 +1,17 @@
 (*
-    Copyright (c) 2020 David C.J. Matthews
+    Copyright (c) 2020-21 David C.J. Matthews
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
-    License version 2.1 as published by the Free Software Foundation.
+    Licence version 2.1 as published by the Free Software Foundation.
     
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
+    Lesser General Public Licence for more details.
     
     You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
+    Licence along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 *)
 
@@ -70,12 +70,12 @@ struct
             (* Back quotes are code.  Treat as identifiers at the moment. *)
         |   process (_, #"`" :: tl) =
             let
-                val () = output(str, "<span class=\"identifier\">")
+                val () = output(str, "<identifier>")
                 fun findEndQuote [] = []
                 |   findEndQuote (#"`" :: tl) = tl
                 |   findEndQuote (ch :: tl) = (output1(str, ch); findEndQuote tl)
                 val continue = findEndQuote tl
-                val () = output(str, "</span>");
+                val () = output(str, "</identifier>");
             in
                 process(false, continue)
             end
