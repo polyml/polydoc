@@ -126,10 +126,10 @@ struct
                     TextIO.output(TextIO.stdErr, "Unexpected exception " ^ exnMessage exn ^ "\n")
     local
         open OS.Path OS.FileSys
-        fun addXml s = joinBaseExt{base=s, ext=SOME "xml"}
+        fun addXml s = joinBaseExt{base=base s, ext=SOME "xml"}
         
         (* Convert the source name into an output file name.
-           We keep the original extension but add .xml *)
+           Replace the extension by .xml *)
         fun sourceNameToHTML(outputDir, sourceFile) =
             joinDirFile{dir=outputDir, file=addXml(file sourceFile)}
     in
