@@ -21,7 +21,7 @@ let
     
     fun help() =
     (TextIO.output(TextIO.stdErr,
-        "Usage: polydoc [-o output] [-s stylesheet] infile...\n"); OS.Process.exit OS.Process.success)
+        "Usage: polydoc [-o output] [-s stylesheet] [-p parentpath:name] infile...\n"); OS.Process.exit OS.Process.success)
 
     fun processArgs(result, []) = result
     
@@ -41,6 +41,29 @@ let
                 NONE =>
                     processArgs({sourceFiles=sourceFiles, styleSheet=SOME style, outputFileOrDir=outputFileOrDir, parent=parent}, args)
             |   SOME _ => error "-s argument may only appear once\n"
+        )
+    
+    |   processArgs ({sourceFiles, styleSheet, outputFileOrDir, parent},
+            "-p" :: parentName :: args) =
+        (
+            case parent of
+                NONE =>
+                let
+                    open Substring
+                    val (first, second) = splitl (fn #":" => false | _ => true) (full parentName)
+                    val parent =
+                        if size second = 0
+                        then (* If there is no colon assume the parent is a path and take the final component as the name *)
+                        let
+                            open OS.Path
+                        in
+                            SOME (parentName, base(file(parentName)))
+                        end
+                        else SOME (string first, string second)
+                in
+                    processArgs({sourceFiles=sourceFiles, styleSheet=styleSheet, outputFileOrDir=outputFileOrDir, parent=parent}, args)
+                end
+            |   SOME _ => error "-p argument may only appear once\n"
         )
 
     |   processArgs({sourceFiles, styleSheet, outputFileOrDir, parent}, inFile :: args) =
