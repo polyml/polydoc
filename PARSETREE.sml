@@ -250,11 +250,19 @@ struct
                     )
                 )
 
-            fun prettyDatatype((name, args, constrs), pref) =
+            fun prettyDatatype((name, [], constrs), pref) =
+                PrettyBlock(4, true, [],
+                    [PrettyBlock(0, false, [],
+                        [PrettyString pref, PrettyBreak(1, 0), nameAndLink decorate name, PrettyBreak(1, 4), PrettyString "="]),
+                        PrettyBreak (1, 0)] @
+                        printList printConstructor (constrs, "|")
+                )
+
+            |   prettyDatatype((name, args, constrs), pref) =
                 PrettyBlock(4, true, [],
                     [PrettyBlock(0, false, [],
                         [PrettyString pref, PrettyBreak(1, 0)] @ prettyTypeVars args @
-                            [nameAndLink decorate name, PrettyBreak(1, 4), PrettyString "="]),
+                            [PrettyBreak(1, 0), nameAndLink decorate name, PrettyBreak(1, 4), PrettyString "="]),
                         PrettyBreak (1, 0)] @
                         printList printConstructor (constrs, "|")
                 )
@@ -279,16 +287,26 @@ struct
     
     |   prettySpec decorate (TypeSpec{ items, typeKind, ... }) =
         let
-            fun nameAndType ((name, args, NONE), pref) =
+            fun nameAndType ((name, [], NONE), pref) =
+                PrettyBlock(0, true, [],
+                    [PrettyString pref, PrettyBreak(1, 0), nameAndLink decorate name, PrettyBreak(1, 4)])
+
+            |   nameAndType ((name, args, NONE), pref) =
                 PrettyBlock(0, true, [],
                     [PrettyString pref, PrettyBreak(1, 0)] @ prettyTypeVars args @
-                        [nameAndLink decorate name, PrettyBreak(1, 4)])
+                        [PrettyBreak(1, 0), nameAndLink decorate name, PrettyBreak(1, 4)])
+
+            |   nameAndType ((name, [], SOME typ), pref) =
+                PrettyBlock(0, true, [],
+                    [PrettyBlock(0, false, [],
+                        [PrettyString pref, PrettyBreak(1, 0), nameAndLink decorate name, PrettyBreak(1, 0), PrettyString "="]),
+                     PrettyBreak(1, 4), prettyType typ])
 
             |   nameAndType ((name, args, SOME typ), pref) =
                 PrettyBlock(0, true, [],
                     [PrettyBlock(0, false, [],
                         [PrettyString pref, PrettyBreak(1, 0)] @ prettyTypeVars args @
-                        [nameAndLink decorate name, PrettyBreak(1, 0), PrettyString "="]),
+                        [PrettyBreak(1, 0), nameAndLink decorate name, PrettyBreak(1, 0), PrettyString "="]),
                      PrettyBreak(1, 4), prettyType typ])
             val kind =
                 case typeKind of TypeKindType => "type" | TypeKindEqType => "eqtype" | TypeKindWithType => "withtype"
